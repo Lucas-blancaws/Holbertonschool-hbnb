@@ -1,0 +1,28 @@
+# Fichiers Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Base de données
+instance/
+*.db
+*.sqlite
+*.sqlite3
+development.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Environnement virtuel
+venv/
+env/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db

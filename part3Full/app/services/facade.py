@@ -1,12 +1,14 @@
-from app.persistence.repository import InMemoryRepository
 from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
 from app.models.review import Review
+from app.services.repositories.user_repository import UserRepository
+from app.persistence.repository import SQLAlchemyRepository
+from app.persistence.repository import InMemoryRepository
 
 class HBnBFacade:
     def __init__(self):
-        self.user_repo = InMemoryRepository()
+        self.user_repo = UserRepository()
         self.amenity_repo = InMemoryRepository()
         self.place_repo = InMemoryRepository()
         self.review_repo = InMemoryRepository()
@@ -24,7 +26,7 @@ class HBnBFacade:
         return self.user_repo.get(user_id)
 
     def get_user_by_email(self, email):
-        return self.user_repo.get_by_attribute('email', email)
+        return self.user_repo.get_user_by_email(email)
     
     def update_user(self, user_id, user_data):
         self.user_repo.update(user_id, user_data)
@@ -46,7 +48,7 @@ class HBnBFacade:
 
     # PLACE
     def create_place(self, place_data):
-        user = self.user_repo.get_by_attribute('id', place_data['owner_id'])
+        user = self.user_repo.get('id', place_data['owner_id'])
         if not user:
             raise KeyError('Invalid input data')
         del place_data['owner_id']
