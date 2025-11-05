@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from app.services.facade_instance import facade
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
 
 api = Namespace('reviews', description='Review operations')
 
@@ -21,12 +21,16 @@ class ReviewList(Resource):
     def post(self):
         """Register a new review"""
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        is_admin = claims.get('is_admin', False)
+
         review_data = api.payload
 
-        if 'user_id' in review_data and review_data['user_id'] != current_user_id:
-            return {'error': 'Unauthorized action'}, 403
-
-        review_data['user_id'] = current_user_id
+        # If not admin, user can only create reviews for themselves
+        if not is_admin:
+            if 'user_id' in review_data and review_data['user_id'] != current_user_id:
+                return {'error': 'Unauthorized action'}, 403
+            review_data['user_id'] = current_user_id
 
         place_id = review_data.get('place_id')
         if not place_id:
@@ -36,17 +40,26 @@ class ReviewList(Resource):
         if not place:
             return {'error': 'Place not found'}, 404
 
-        user = facade.get_user(review_data['user_id'])
+        user_id = review_data.get('user_id', current_user_id)
+        user = facade.get_user(user_id)
         if not user:
             return {'error': 'User not found'}, 400
-        if str(place.owner.id) == current_user_id:
-            return {'error': 'You cannot review your own place'}, 400
-        try:
-            existing_reviews = facade.get_reviews_by_place(place.id)
-            for review in existing_reviews:
-                return {'error': 'You have already reviewed this place'}, 400
-        except Exception:
-            pass
+
+        # Admins can bypass these restrictions
+        if not is_admin:
+            # Regular users cannot review their own place
+            if str(place.owner.id) == current_user_id:
+                return {'error': 'You cannot review your own place'}, 400
+            
+            # Regular users can only review once per place
+            try:
+                existing_reviews = facade.get_reviews_by_place(place.id)
+                for review in existing_reviews:
+                    if str(review.user.id) == current_user_id:
+                        return {'error': 'You have already reviewed this place'}, 400
+            except Exception:
+                pass
+
         try:
             new_review = facade.create_review(review_data)
             return new_review.to_dict(), 201
@@ -82,10 +95,14 @@ class ReviewResource(Resource):
             return {'error': 'Review not found'}, 404
 
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        is_admin = claims.get('is_admin', False)
 
-        if str(review.user.id) != current_user_id:
+        # Admin can modify any review, regular users only their own
+        if not is_admin and str(review.user.id) != current_user_id:
             return {'error': 'Unauthorized action'}, 403
 
+        # Nobody can change user_id or place_id
         if 'user_id' in review_data or 'place_id' in review_data:
             return {'error': 'You cannot change user_id or place_id'}, 400
         
@@ -105,9 +122,12 @@ class ReviewResource(Resource):
             return {'error': 'Review not found'}, 404
 
         current_user_id = get_jwt_identity()
+        claims = get_jwt()
+        is_admin = claims.get('is_admin', False)
 
-        if str(review.user.id) != current_user_id:
-            return {'error': 'Vous ne pouvez supprimer que vos propres avis'}, 403
+        # Admin can delete any review, regular users only their own
+        if not is_admin and str(review.user.id) != current_user_id:
+            return {'error': 'Unauthorized action'}, 403
 
         try:
             facade.delete_review(review_id)
