@@ -2,6 +2,7 @@ from app.models.user import User
 from app.models.amenity import Amenity
 from app.models.place import Place
 from app.models.review import Review
+from app.services.repositories.amenity_repository import AmenityRepository
 from app.services.repositories.user_repository import UserRepository
 from app.persistence.repository import SQLAlchemyRepository
 from app.persistence.repository import InMemoryRepository
@@ -9,7 +10,7 @@ from app.persistence.repository import InMemoryRepository
 class HBnBFacade:
     def __init__(self):
         self.user_repo = UserRepository()
-        self.amenity_repo = InMemoryRepository()
+        self.amenity_repo = AmenityRepository()
         self.place_repo = InMemoryRepository()
         self.review_repo = InMemoryRepository()
 
@@ -48,7 +49,7 @@ class HBnBFacade:
 
     # PLACE
     def create_place(self, place_data):
-        user = self.user_repo.get('id', place_data['owner_id'])
+        user = self.user_repo.get(place_data['owner_id'])
         if not user:
             raise KeyError('Invalid input data')
         del place_data['owner_id']
