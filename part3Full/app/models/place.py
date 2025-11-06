@@ -95,7 +95,7 @@ class Place(BaseModel):
     
     def to_dict_list(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
             'description': self.description,
             'price': self.price,

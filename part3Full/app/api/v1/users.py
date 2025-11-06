@@ -1,7 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from app.services.facade_instance import facade
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from flask import request
 
 api = Namespace('users', description='User operations')
 api = Namespace('admin', description='Admin operations')
@@ -96,10 +95,11 @@ class UserList(Resource):
     @api.response(400, 'Invalid input data')
     @jwt_required()
     def post(self):
-        """Register a new user (Admin only)"""
-        # Check if user is admin
+        """Create a new user (ADMIN ONLY)"""
         claims = get_jwt()
-        if not claims.get('is_admin', False):
+        is_admin = claims.get('is_admin', False)
+        
+        if not is_admin:
             return {'error': 'Admin privileges required'}, 403
 
         user_data = api.payload
@@ -119,7 +119,7 @@ class UserList(Resource):
         
     @api.response(200, 'List of users retrieved successfully')
     def get(self):
-        """Retrieve a list of users"""
+        """Retrieve a list of users (PUBLIC)"""
         users = facade.get_users()
         return [user.to_dict() for user in users], 200
     
@@ -128,7 +128,7 @@ class UserResource(Resource):
     @api.response(200, 'User details retrieved successfully')
     @api.response(404, 'User not found')
     def get(self, user_id):
-        """Get user details by ID"""
+        """Get user details by ID (PUBLIC)"""
         user = facade.get_user(user_id)
         if not user:
             return {'error': 'User not found'}, 404
@@ -146,7 +146,7 @@ class UserResource(Resource):
         claims = get_jwt()
         is_admin = claims.get('is_admin', False)
 
-        # If not admin, user can only modify their own data
+        # Admin can modify anyone, regular user only themselves
         if not is_admin and current_user_id != user_id:
             return {'error': 'Unauthorized action'}, 403
 
@@ -165,17 +165,15 @@ class UserResource(Resource):
             if existing_user and str(existing_user.id) != user_id:
                 return {'error': 'Email already in use'}, 400
 
-        # Admin can modify password - hash it
-        if is_admin and 'password' in user_data:
-            user = facade.get_user(user_id)
-            if user:
-                user.hash_password(user_data['password'])
-                # Remove password from update data since it's already hashed
-                del user_data['password']
-
         user = facade.get_user(user_id)
         if not user:
             return {'error': 'User not found'}, 404
+
+        # Admin can modify password - hash it
+        if is_admin and 'password' in user_data:
+            user.hash_password(user_data['password'])
+            del user_data['password']
+
         try:
             facade.update_user(user_id, user_data)
             updated_user = facade.get_user(user_id)
