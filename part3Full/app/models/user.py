@@ -1,11 +1,12 @@
 from app.extensions import db, bcrypt
-import re
+import re, uuid
 from app.models.basemodel import BaseModel
 from sqlalchemy.orm import validates
 
 class User(BaseModel):
     __tablename__ = 'users'
 
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120), nullable=False, unique=True)
@@ -63,7 +64,7 @@ class User(BaseModel):
     def delete_review(self, review):
         """Add an amenity to the place."""
         self.reviews.remove(review)
-  
+
     def hash_password(self, password):
         """Hash le mot de passe et le stocke"""
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')

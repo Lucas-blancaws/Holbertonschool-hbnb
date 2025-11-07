@@ -1,9 +1,10 @@
 from flask_restx import Namespace, Resource, fields
 from app.services.facade_instance import facade
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
+from flask import request
 
 api = Namespace('users', description='User operations')
-api = Namespace('admin', description='Admin operations')
+user_api = Namespace('admin', description='Admin operations')
 
 # Define the user model for input validation and documentation
 user_model = api.model('User', {
@@ -13,7 +14,7 @@ user_model = api.model('User', {
     'password': fields.String(description='Password of the user')
 })
 
-admin_user_model = api.model('AdminUser', {
+admin_user_model = user_api.model('AdminUser', {
     'first_name': fields.String(description='First name of the user'),
     'last_name': fields.String(description='Last name of the user'),
     'email': fields.String(description='Email of the user'),
