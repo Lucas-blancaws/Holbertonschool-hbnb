@@ -57,6 +57,31 @@ An Amenity can belong to several places via an association table
 
 ## ER Diagram (Mermaid.js):
 
+The ER diagram shows the structure of the database used in the HBnB application.
+It represents the main tables and their relationships, making it easy to understand how the data is organized.
+
+
+__What the diagram shows__:
+
+User: A user can create multiple Places and write multiple Reviews.
+
+Place: A place belongs to a specific user, can receive multiple reviews, and can offer several Amenities.
+
+Review: Connects a user to a place (a user leaves a review about a place).
+
+Amenity: A feature or service (e.g., Wi-Fi, parking, pool) that can be associated with multiple places.
+
+Place_Amenity: An association table that enables the many-to-many relationship between Place and Amenity.
+
+
+__Why it is useful__:
+
+It helps visualize how data is linked.
+
+It simplifies the creation and understanding of database models in the code.
+
+It provides a solid foundation for writing correct and consistent queries.
+
 <img width="636" height="707" alt="Diagramme Task 10" src="https://github.com/user-attachments/assets/6c83a312-3dd1-426a-a664-2640ec134b7e" />
 
 
