@@ -50,23 +50,27 @@ class HBnBFacade:
 
     # PLACE
     def create_place(self, place_data):
+        owner_id = place_data.get('owner_id')
         user = self.user_repo.get(place_data['owner_id'])
         if not user:
-            raise KeyError('Invalid input data')
-        del place_data['owner_id']
+            raise ValueError('Owner not found')
+        
+        amenity_ids = place_data.pop('amenities', [])
+
         place_data['owner'] = user
-        amenities = place_data.pop('amenities', None)
-        if amenities:
-            for a in amenities:
-                amenity = self.get_amenity(a['id'])
-                if not amenity:
-                    raise KeyError('Invalid input data')
+        del place_data['owner_id']
         place = Place(**place_data)
+
+        if amenity_ids:
+            for amenity_id in amenity_ids:
+                if isinstance(amenity_id, dict):
+                    amenity_id = amenity_id.get('id')
+                
+                amenity = self.amenity_repo.get(amenity_id)
+                if amenity:
+                    place.amenities.append(amenity)
+        
         self.place_repo.add(place)
-        user.add_place(place)
-        if amenities:
-            for amenity in amenities:
-                place.add_amenity(amenity)
         return place
 
     def get_place(self, place_id):
@@ -80,22 +84,25 @@ class HBnBFacade:
 
     # REVIEWS
     def create_review(self, review_data):
+        user_id = review_data.get('user_id')
+        place_id = review_data.get('place_id')
+
         user = self.user_repo.get(review_data['user_id'])
         if not user:
-            raise KeyError('Invalid input data')
-        del review_data['user_id']
-        review_data['user'] = user
+            raise ValueError('User not found')
         
-        place = self.place_repo.get(review_data['place_id'])
+        place = self.place_repo.get(place_id)
         if not place:
-            raise KeyError('Invalid input data')
-        del review_data['place_id']
-        review_data['place'] = place
+            raise ValueError('Place not found')
 
-        review = Review(**review_data)
+        review = Review(
+            text=review_data['text'],
+            rating=review_data['rating'],
+            place=place,
+            user=user
+        )
+
         self.review_repo.add(review)
-        user.add_review(review)
-        place.add_review(review)
         return review
         
     def get_review(self, review_id):
@@ -114,11 +121,4 @@ class HBnBFacade:
         self.review_repo.update(review_id, review_data)
 
     def delete_review(self, review_id):
-        review = self.review_repo.get(review_id)
-        
-        user = self.user_repo.get(review.user.id)
-        place = self.place_repo.get(review.place.id)
-
-        user.delete_review(review)
-        place.delete_review(review)
         self.review_repo.delete(review_id)

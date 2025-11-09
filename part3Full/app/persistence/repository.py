@@ -44,7 +44,6 @@ class InMemoryRepository(Repository):
         if obj:
             obj.update(data)
             return obj
-        return None
 
     def delete(self, obj_id):
         if obj_id in self._storage:
@@ -57,65 +56,47 @@ class InMemoryRepository(Repository):
 
 
 class SQLAlchemyRepository(Repository):
-    """Repository utilisant SQLAlchemy pour la persistence en base de données"""
     
     def __init__(self, model):
-        """
-        Initialise le repository avec un modèle SQLAlchemy
-        
-        Args:
-            model: La classe du modèle SQLAlchemy (ex: User, Place, Review)
-        """
         self.model = model
 
     def add(self, obj):
-        """Ajoute un objet à la base de données"""
         from app.extensions import db
-        try:
-            db.session.add(obj)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            raise e
+        db.session.add(obj)
+        db.session.commit()
+        return obj
 
     def get(self, obj_id):
-        """Récupère un objet par son ID"""
         return self.model.query.get(obj_id)
 
     def get_all(self):
-        """Récupère tous les objets"""
         return self.model.query.all()
 
     def update(self, obj_id, data):
-        """Met à jour un objet existant"""
         from app.extensions import db
+        from datetime import datetime, timezone
         obj = self.get(obj_id)
         if obj:
-            try:
-                for key, value in data.items():
-                    if hasattr(obj, key):
-                        setattr(obj, key, value)
-                db.session.commit()
-                return obj
-            except Exception as e:
-                db.session.rollback()
-                raise e
+            for key, value in data.items():
+                if hasattr(obj, key):
+                    setattr(obj, key, value)
+            if hasattr(obj, 'updated_at'):
+                obj.updated_at = datetime.now(timezone.utc)
+
+            db.session.commit()
+
+            db.session.refresh(obj)
+            return obj
         return None
 
     def delete(self, obj_id):
-        """Supprime un objet de la base de données"""
         from app.extensions import db
         obj = self.get(obj_id)
         if obj:
-            try:
-                db.session.delete(obj)
-                db.session.commit()
-                return True
-            except Exception as e:
-                db.session.rollback()
-                raise e
+            db.session.delete(obj)
+            db.session.commit()
+            return True
         return False
 
     def get_by_attribute(self, attr_name, attr_value):
-        """Récupère un objet par un attribut spécifique"""
         return self.model.query.filter_by(**{attr_name: attr_value}).first()

@@ -27,17 +27,14 @@ class UserList(Resource):
         if 'password' not in user_data:
             return {'error': 'Password is required'}, 400
 
-    # Email unique
         if facade.get_user_by_email(user_data['email']):
             return {'error': 'Email already registered'}, 409
 
         users_exist = facade.get_users()
 
         if len(users_exist) == 0:
-        # ✅ Premier user → devient admin AUTOMATIQUEMENT
             user_data['is_admin'] = True
         else:
-        # ✅ Tous les autres requièrent un token admin
             from flask_jwt_extended import verify_jwt_in_request, get_jwt
             try:
                 verify_jwt_in_request()
@@ -47,7 +44,6 @@ class UserList(Resource):
             except Exception:
                 return {'error': 'Admin privileges required'}, 403
 
-    # Création finale
         try:
             new_user = facade.create_user(user_data)
             return new_user.to_dict(), 201

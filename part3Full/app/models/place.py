@@ -1,6 +1,7 @@
 from app.models.basemodel import BaseModel
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates, relationship
 from app.extensions import db
+from app.models.place_amenity import place_amenity
 
 class Place(BaseModel):
     __tablename__ = 'places'
@@ -11,7 +12,10 @@ class Place(BaseModel):
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     
-    owner_id = db.Column(db.String(36), nullable=False)
+    owner_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    
+    reviews = relationship('Review', backref='place', lazy=True, cascade='all, delete-orphan')
+    amenities = relationship('Amenity', secondary=place_amenity, lazy='subquery', backref=db.backref('places', lazy=True))
     
     def __init__(self, title, price, latitude, longitude, owner, description=None):
         super().__init__()
@@ -21,13 +25,12 @@ class Place(BaseModel):
         self.latitude = latitude
         self.longitude = longitude
         self.owner = owner  
-        self.owner_id = owner.id
+        self.owner_id = owner.id if hasattr(owner, 'id') else owner
         self.reviews = []
         self.amenities = []
     
     @validates('title')
     def validate_title(self, key, value):
-        """Valide le titre du place"""
         if not value:
             raise ValueError("Title cannot be empty")
         if not isinstance(value, str):
@@ -38,7 +41,6 @@ class Place(BaseModel):
     
     @validates('price')
     def validate_price(self, key, value):
-        """Valide le prix"""
         if not isinstance(value, (float, int)):
             raise TypeError("Price must be a float or int")
         if value <= 0:
@@ -47,7 +49,6 @@ class Place(BaseModel):
     
     @validates('latitude')
     def validate_latitude(self, key, value):
-        """Valide la latitude"""
         if not isinstance(value, (float, int)):
             raise TypeError("Latitude must be a float")
         value = float(value)
@@ -57,7 +58,6 @@ class Place(BaseModel):
     
     @validates('longitude')
     def validate_longitude(self, key, value):
-        """Valide la longitude"""
         if not isinstance(value, (float, int)):
             raise TypeError("Longitude must be a float")
         value = float(value)
@@ -66,26 +66,23 @@ class Place(BaseModel):
         return value
 
     def add_review(self, review):
-        """Ajoute une review au place"""
         self.reviews.append(review)
     
     def delete_review(self, review):
-        """Supprime une review du place"""
         self.reviews.remove(review)
 
     def add_amenity(self, amenity):
-        """Ajoute une amenity au place"""
         self.amenities.append(amenity)
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
             'description': self.description,
             'price': self.price,
             'latitude': self.latitude,
             'longitude': self.longitude,
-            'owner_id': self.owner_id
+            'owner_id': str(self.owner_id)
         }
     
     def to_dict_list(self):

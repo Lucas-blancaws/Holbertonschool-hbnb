@@ -8,8 +8,8 @@ class Review(BaseModel):
     text = db.Column(db.String(500), nullable=False)
     rating = db.Column(db.Integer, nullable=False)
     
-    place_id = db.Column(db.String(36), nullable=False)
-    user_id = db.Column(db.String(36), nullable=False)
+    place_id = db.Column(db.String(36), db.ForeignKey('places.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
 
     def __init__(self, text, rating, place, user):
         super().__init__()
@@ -22,7 +22,6 @@ class Review(BaseModel):
     
     @validates('text')
     def validate_text(self, key, value):
-        """Valide le texte de la review"""
         if not value:
             raise ValueError("Text cannot be empty")
         if not isinstance(value, str):
@@ -33,7 +32,6 @@ class Review(BaseModel):
     
     @validates('rating')
     def validate_rating(self, key, value):
-        """Valide le rating"""
         if not isinstance(value, int):
             raise TypeError("Rating must be an integer")
         if not 1 <= value <= 5:
@@ -45,6 +43,6 @@ class Review(BaseModel):
             'id': str(self.id),
             'text': self.text,
             'rating': self.rating,
-            'place_id': self.place_id,
-            'user_id': self.user_id
+            'place_id': str(self.place_id),
+            'user_id': str(self.user_id)
         }

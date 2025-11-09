@@ -52,8 +52,6 @@ class AdminPlaceModify(Resource):
         if not is_admin and place.owner_id != user_id:
             return {'error': 'Unauthorized action'}, 403
 
-        # Logic to update the place
-        pass
 
 @api.route('/')
 class PlaceList(Resource):
@@ -131,7 +129,8 @@ class PlaceResource(Resource):
 
         try:
             facade.update_place(place_id, place_data)
-            return {'message': 'Place updated successfully'}, 200
+            updated_place = facade.get_place(place_id)
+            return updated_place.to_dict(), 200
         except Exception as e:
             return {'error': str(e)}, 400
 

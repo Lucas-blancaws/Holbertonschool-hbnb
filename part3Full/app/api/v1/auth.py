@@ -1,6 +1,6 @@
 from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from flask import current_app
+from flask import request
 from app.services.facade_instance import facade
 
 api = Namespace('auth', description='Authentication operations')
@@ -18,46 +18,51 @@ class Login(Resource):
     @api.response(401, 'Invalid credentials')
     def post(self):
         """Authenticate user and return a JWT token"""
-        credentials = api.payload
-        
-        # Validation des champs requis
-        if not credentials or not credentials.get('email') or not credentials.get('password'):
-            return {'error': 'Email and password are required'}, 400
-        
-        email = credentials['email'].strip().lower()
-        password = credentials['password']
-        
         try:
+            credentials = request.get_json()
+            
+            print("\n LOGIN ATTEMPT")
+            print(f"Credentials: {credentials}")
+            
+            if not credentials:
+                return {'error': 'No data provided'}, 400
+            
+            email = credentials.get('email')
+            password = credentials.get('password')
+            
+            if not email or not password:
+                return {'error': 'Email and password are required'}, 400
+            
+            print(f"Email: {email}")
+            
             user = facade.get_user_by_email(email)
+            
+            if not user:
+                print(f"User not found: {email}")
+                return {'error': 'Invalid credentials'}, 401
+            
+            print(f"User found: {user.id}")
+            
+            if not user.verify_password(password):
+                print("Invalid password")
+                return {'error': 'Invalid credentials'}, 401
+            
+            print("Authentication successful")
+            
+            access_token = create_access_token(
+                identity=str(user.id),
+                additional_claims={"is_admin": user.is_admin}
+            )
+            
+            print(f"Token created")
+            
+            return {'access_token': access_token}, 200
+            
         except Exception as e:
-            if current_app.config.get('DEBUG'):
-                print(f"Error fetching user: {e}")
-            return {'error': 'Internal server error'}, 500
-        
-        # Debug seulement en développement
-        if current_app.config.get('DEBUG'):
-            print(f"Login attempt for: {email}")
-            print(f"User found: {user is not None}")
-        
-        if not user or not user.verify_password(password):
-            return {'error': 'Invalid credentials'}, 401
-        
-        access_token = create_access_token(
-            identity=str(user.id),
-            additional_claims={"is_admin": user.is_admin}
-        )
-        
-        return {
-            'access_token': access_token,
-            'user': {
-                'id': user.id,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'is_admin': user.is_admin
-            }
-        }, 200
-
+            print(f"EXCEPTION: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return {'error': 'Internal server error', 'details': str(e)}, 500
 
 @api.route('/protected')
 class ProtectedResource(Resource):
