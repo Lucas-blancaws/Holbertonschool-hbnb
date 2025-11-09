@@ -100,7 +100,15 @@ It is recommended to use a virtual environment (venv).
 
 ## Tests:
 
-(To be completed when final validation and test integration are done.)
+<img width="928" height="88" alt="Test hash et vérification du mdp Task1" src="https://github.com/user-attachments/assets/a93a6cfe-b054-428d-8725-8929f00ab8d0" />
+
+Above are the tests for hashing and verifying the password.
+
+
+<img width="559" height="937" alt="screen test task" src="https://github.com/user-attachments/assets/23296242-85b4-43ec-8d0e-708d2406ba98" />
+
+Above are the tests for verifying each step of part 3.
+
 
 ## Authors:
 
