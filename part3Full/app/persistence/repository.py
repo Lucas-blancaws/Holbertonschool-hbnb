@@ -43,6 +43,7 @@ class InMemoryRepository(Repository):
         obj = self.get(obj_id)
         if obj:
             obj.update(data)
+            return obj
 
     def delete(self, obj_id):
         if obj_id in self._storage:
@@ -68,6 +69,7 @@ class SQLAlchemyRepository(Repository):
         from app.extensions import db
         db.session.add(obj)
         db.session.commit()
+        return obj
 
     def get(self, obj_id):
         """Récupère un objet par son ID"""
@@ -80,11 +82,20 @@ class SQLAlchemyRepository(Repository):
     def update(self, obj_id, data):
         """Met à jour un objet existant"""
         from app.extensions import db
+        from datetime import datetime, timezone
         obj = self.get(obj_id)
         if obj:
             for key, value in data.items():
-                setattr(obj, key, value)
+                if hasattr(obj, key):
+                    setattr(obj, key, value)
+            if hasattr(obj, 'updated_at'):
+                obj.updated_at = datetime.now(timezone.utc)
+
             db.session.commit()
+
+            db.session.refresh(obj)
+            return obj
+        return None
 
     def delete(self, obj_id):
         """Supprime un objet de la base de données"""
@@ -93,6 +104,8 @@ class SQLAlchemyRepository(Repository):
         if obj:
             db.session.delete(obj)
             db.session.commit()
+            return True
+        return False
 
     def get_by_attribute(self, attr_name, attr_value):
         """Récupère un objet par un attribut spécifique"""

@@ -131,7 +131,8 @@ class PlaceResource(Resource):
 
         try:
             facade.update_place(place_id, place_data)
-            return {'message': 'Place updated successfully'}, 200
+            updated_place = facade.get_place(place_id)
+            return updated_place.to_dict(), 200
         except Exception as e:
             return {'error': str(e)}, 400
 

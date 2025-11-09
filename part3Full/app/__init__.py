@@ -35,6 +35,10 @@ def create_app(config_class=config.DevelopmentConfig):
         from app.services.facade_instance import facade
         from app.models.user import User
         from app.models.amenity import Amenity
+        from app.models.place_amenity import place_amenity
+        from app.models.place import Place
+        from app.models.review import Review
+    
         db.create_all()
 
         existing_user = facade.user_repo.get_user_by_email('john2.doe@example.com')
