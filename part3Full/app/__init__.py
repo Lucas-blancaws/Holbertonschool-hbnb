@@ -47,7 +47,7 @@ def create_app(config_class=config.DevelopmentConfig):
                     "password": "123456",
                     "is_admin": True
                 })
-                print("✅ Test user created")
+                print("Test user created")
             except Exception as e:
-                print(f"❌ Could not create test user: {e}")
+                print(f"Could not create test user: {e}")
     return app

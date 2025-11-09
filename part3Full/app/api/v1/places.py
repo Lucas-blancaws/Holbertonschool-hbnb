@@ -52,8 +52,6 @@ class AdminPlaceModify(Resource):
         if not is_admin and place.owner_id != user_id:
             return {'error': 'Unauthorized action'}, 403
 
-        # Logic to update the place
-        pass
 
 @api.route('/')
 class PlaceList(Resource):

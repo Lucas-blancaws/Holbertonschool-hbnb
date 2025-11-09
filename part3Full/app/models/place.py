@@ -15,8 +15,7 @@ class Place(BaseModel):
     owner_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     
     reviews = relationship('Review', backref='place', lazy=True, cascade='all, delete-orphan')
-    amenities = relationship('Amenity', secondary=place_amenity, lazy='subquery',
-                             backref=db.backref('places', lazy=True))
+    amenities = relationship('Amenity', secondary=place_amenity, lazy='subquery', backref=db.backref('places', lazy=True))
     
     def __init__(self, title, price, latitude, longitude, owner, description=None):
         super().__init__()
@@ -32,7 +31,6 @@ class Place(BaseModel):
     
     @validates('title')
     def validate_title(self, key, value):
-        """Valide le titre du place"""
         if not value:
             raise ValueError("Title cannot be empty")
         if not isinstance(value, str):
@@ -43,7 +41,6 @@ class Place(BaseModel):
     
     @validates('price')
     def validate_price(self, key, value):
-        """Valide le prix"""
         if not isinstance(value, (float, int)):
             raise TypeError("Price must be a float or int")
         if value <= 0:
@@ -52,7 +49,6 @@ class Place(BaseModel):
     
     @validates('latitude')
     def validate_latitude(self, key, value):
-        """Valide la latitude"""
         if not isinstance(value, (float, int)):
             raise TypeError("Latitude must be a float")
         value = float(value)
@@ -62,7 +58,6 @@ class Place(BaseModel):
     
     @validates('longitude')
     def validate_longitude(self, key, value):
-        """Valide la longitude"""
         if not isinstance(value, (float, int)):
             raise TypeError("Longitude must be a float")
         value = float(value)
@@ -71,15 +66,12 @@ class Place(BaseModel):
         return value
 
     def add_review(self, review):
-        """Ajoute une review au place"""
         self.reviews.append(review)
     
     def delete_review(self, review):
-        """Supprime une review du place"""
         self.reviews.remove(review)
 
     def add_amenity(self, amenity):
-        """Ajoute une amenity au place"""
         self.amenities.append(amenity)
 
     def to_dict(self):

@@ -22,7 +22,6 @@ class Review(BaseModel):
     
     @validates('text')
     def validate_text(self, key, value):
-        """Valide le texte de la review"""
         if not value:
             raise ValueError("Text cannot be empty")
         if not isinstance(value, str):
@@ -33,7 +32,6 @@ class Review(BaseModel):
     
     @validates('rating')
     def validate_rating(self, key, value):
-        """Valide le rating"""
         if not isinstance(value, int):
             raise TypeError("Rating must be an integer")
         if not 1 <= value <= 5:

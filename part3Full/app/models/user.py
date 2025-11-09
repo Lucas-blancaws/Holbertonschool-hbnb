@@ -54,19 +54,15 @@ class User(BaseModel):
         return value
 
     def add_place(self, place):
-        """Add an amenity to the place."""
         self.places.append(place)
 
     def add_review(self, review):
-        """Add an amenity to the place."""
         self.reviews.append(review)
 
     def delete_review(self, review):
-        """Add an amenity to the place."""
         self.reviews.remove(review)
 
     def hash_password(self, password):
-        """Hash le mot de passe et le stocke"""
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def verify_password(self, password):
