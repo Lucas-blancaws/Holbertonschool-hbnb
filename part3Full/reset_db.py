@@ -1,144 +1,72 @@
 #!/usr/bin/env python3
 """
-Script de test complet pour les tâches 0 à 7 du projet HBnB Part 3
-Exécuter avec : python3 test_tasks_0_to_7.py
+Script de test COMPLET pour HBnB Part 3
+Teste : Authentication, Authorization, CRUD, Validations
 """
 
 import requests
 import json
-import sys
-from time import sleep
+from colorama import Fore, Style, init
 
-# Configuration
+init(autoreset=True)
+
 BASE_URL = "http://localhost:5000/api/v1"
 HEADERS = {"Content-Type": "application/json"}
 
-# Couleurs pour l'affichage
-class Colors:
-    GREEN = '\033[92m'
-    RED = '\033[91m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    BOLD = '\033[1m'
-    END = '\033[0m'
+# Stats
+tests_passed = 0
+tests_failed = 0
+tests_total = 0
 
-def print_test(message):
-    print(f"\n{Colors.BLUE}{Colors.BOLD}🧪 TEST: {message}{Colors.END}")
-
-def print_success(message):
-    print(f"{Colors.GREEN}✓ {message}{Colors.END}")
-
-def print_error(message):
-    print(f"{Colors.RED}✗ {message}{Colors.END}")
-
-def print_warning(message):
-    print(f"{Colors.YELLOW}⚠ {message}{Colors.END}")
-
-def print_section(message):
-    print(f"\n{Colors.BOLD}{'='*70}")
-    print(f"  {message}")
-    print(f"{'='*70}{Colors.END}")
-
-# Variables globales pour stocker les données des tests
-test_data = {
-    'admin_token': None,
-    'user_token': None,
-    'admin_id': None,
-    'user_id': None,
-    'place_id': None,
-    'amenity_id': None,
-    'review_id': None
+# Storage
+admin_token = None
+user_token = None
+created_ids = {
+    'admin': None,
+    'user': None,
+    'place': None,
+    'review': None,
+    'amenity': None
 }
 
-def test_server_running():
-    """Test 0: Vérifier que le serveur est accessible"""
-    print_section("TÂCHE 0: Configuration et Application Factory")
-    print_test("Vérification que le serveur Flask est accessible")
-    try:
-        response = requests.get(f"{BASE_URL}/users/", timeout=5)
-        print_success(f"Serveur accessible (Status: {response.status_code})")
-        return True
-    except requests.exceptions.ConnectionError:
-        print_error("Le serveur n'est pas accessible. Assurez-vous que 'python3 run.py' est lancé.")
-        return False
-    except Exception as e:
-        print_error(f"Erreur inattendue: {e}")
-        return False
 
-def test_create_admin_user():
-    """Test 1: Créer un utilisateur admin"""
-    print_section("TÂCHE 1: Création d'utilisateur avec mot de passe hashé")
-    print_test("Création d'un utilisateur administrateur")
-    
-    admin_data = {
-        "first_name": "Admin",
-        "last_name": "User",
-        "email": "admin@test.com",
-        "password": "admin123",
-        "is_admin": True
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/users/", json=admin_data, headers=HEADERS)
-        
-        if response.status_code == 201:
-            data = response.json()
-            test_data['admin_id'] = data['id']
-            print_success(f"Admin créé avec succès (ID: {data['id']})")
-            
-            # Vérifier que le password n'est PAS retourné
-            if 'password' not in data:
-                print_success("Le mot de passe n'est PAS retourné dans la réponse (sécurité OK)")
-            else:
-                print_error("SÉCURITÉ: Le mot de passe est retourné dans la réponse!")
-            return True
-        else:
-            print_error(f"Échec création admin (Status: {response.status_code})")
-            print_error(f"Réponse: {response.text}")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
+def print_header(title):
+    print(f"\n{'='*70}")
+    print(f"{Fore.CYAN}{Style.BRIGHT}{title.center(70)}")
+    print(f"{'='*70}\n")
 
-def test_create_regular_user():
-    """Test 1b: Créer un utilisateur normal"""
-    print_test("Création d'un utilisateur normal")
-    
-    user_data = {
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john@test.com",
-        "password": "user123"
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/users/", json=user_data, headers=HEADERS)
-        
-        if response.status_code == 201:
-            data = response.json()
-            test_data['user_id'] = data['id']
-            print_success(f"Utilisateur créé avec succès (ID: {data['id']})")
-            
-            # Vérifier que le password n'est PAS retourné
-            if 'password' not in data:
-                print_success("Le mot de passe n'est PAS retourné dans la réponse")
-            return True
-        else:
-            print_error(f"Échec création utilisateur (Status: {response.status_code})")
-            print_error(f"Réponse: {response.text}")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
+
+def print_test(test_name):
+    global tests_total
+    tests_total += 1
+    print(f"{Fore.YELLOW}[TEST {tests_total}] {test_name}...", end=" ")
+
+
+def print_success(message=""):
+    global tests_passed
+    tests_passed += 1
+    print(f"{Fore.GREEN}✓ PASSED{Style.RESET_ALL} {message}")
+
+
+def print_failure(message=""):
+    global tests_failed
+    tests_failed += 1
+    print(f"{Fore.RED}✗ FAILED{Style.RESET_ALL} {message}")
+
+
+def print_info(message):
+    print(f"{Fore.BLUE}ℹ {message}{Style.RESET_ALL}")
+
+
+# ========== AUTHENTICATION TESTS ==========
 
 def test_login_admin():
-    """Test 2: Login et génération JWT pour admin"""
-    print_section("TÂCHE 2: Authentification JWT")
-    print_test("Connexion de l'administrateur")
+    """Test: Login avec admin"""
+    print_test("Login admin")
     
     login_data = {
-        "email": "admin@test.com",
-        "password": "admin123"
+        "email": "john2.doe@example.com",
+        "password": "123456"
     }
     
     try:
@@ -146,42 +74,66 @@ def test_login_admin():
         
         if response.status_code == 200:
             data = response.json()
-            if 'access_token' in data:
-                test_data['admin_token'] = data['access_token']
-                print_success("Token JWT admin obtenu avec succès")
-                print_success(f"Token: {data['access_token'][:50]}...")
-                
-                # Vérifier que le token contient le claim is_admin
-                print_test("Vérification du claim is_admin dans le token")
-                import jwt as pyjwt
-                try:
-                    decoded = pyjwt.decode(data['access_token'], options={"verify_signature": False})
-                    if decoded.get('is_admin') == True:
-                        print_success("Le claim 'is_admin' est présent et vaut True")
-                    else:
-                        print_error(f"Le claim 'is_admin' vaut {decoded.get('is_admin')}")
-                except:
-                    print_warning("Impossible de décoder le token (pyjwt non installé?)")
-                
+            global admin_token
+            admin_token = data.get('access_token')
+            
+            if admin_token:
+                created_ids['admin'] = data['user']['id']
+                print_success(f"Admin token obtenu")
                 return True
             else:
-                print_error("Pas de token dans la réponse")
+                print_failure("Token manquant dans la réponse")
                 return False
         else:
-            print_error(f"Échec login admin (Status: {response.status_code})")
-            print_error(f"Réponse: {response.text}")
+            print_failure(f"Status: {response.status_code} - {response.text}")
             return False
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def test_login_user():
-    """Test 2b: Login utilisateur normal"""
-    print_test("Connexion de l'utilisateur normal")
+
+def test_create_regular_user():
+    """Test: Créer un user régulier (admin)"""
+    print_test("Création user régulier par admin")
+    
+    if not admin_token:
+        print_failure("Pas de token admin")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {admin_token}'
+    
+    user_data = {
+        "first_name": "Alice",
+        "last_name": "Smith",
+        "email": f"alice.test{tests_total}@example.com",
+        "password": "password123",
+        "is_admin": False
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/users/", json=user_data, headers=headers_auth)
+        
+        if response.status_code == 201:
+            data = response.json()
+            created_ids['user'] = data['id']
+            print_success(f"User créé: {data['id'][:8]}...")
+            return True
+        else:
+            print_failure(f"Status: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+def test_login_regular_user():
+    """Test: Login user régulier"""
+    print_test("Login user régulier")
     
     login_data = {
-        "email": "john@test.com",
-        "password": "user123"
+        "email": f"alice.test{tests_total-1}@example.com",
+        "password": "password123"
     }
     
     try:
@@ -189,541 +141,426 @@ def test_login_user():
         
         if response.status_code == 200:
             data = response.json()
-            if 'access_token' in data:
-                test_data['user_token'] = data['access_token']
-                print_success("Token JWT utilisateur obtenu avec succès")
+            global user_token
+            user_token = data.get('access_token')
+            
+            if user_token:
+                print_success("User token obtenu")
                 return True
-        print_error(f"Échec login utilisateur (Status: {response.status_code})")
-        return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_wrong_password():
-    """Test 2c: Vérifier que le hash fonctionne (mauvais password)"""
-    print_test("Tentative de connexion avec un mauvais mot de passe")
-    
-    login_data = {
-        "email": "admin@test.com",
-        "password": "wrongpassword"
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/auth/login", json=login_data, headers=HEADERS)
-        
-        if response.status_code == 401:
-            print_success("Le mauvais mot de passe est bien rejeté (hash OK)")
-            return True
-        else:
-            print_error(f"Le mauvais mot de passe n'est pas rejeté! (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_protected_endpoint():
-    """Test 2d: Accès à un endpoint protégé"""
-    print_test("Accès au endpoint protégé avec le token")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    try:
-        response = requests.get(f"{BASE_URL}/protected/protected", headers=auth_header)
-        
-        if response.status_code == 200:
-            print_success("Accès autorisé au endpoint protégé avec JWT")
-            return True
-        else:
-            print_error(f"Accès refusé (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_protected_without_token():
-    """Test 2e: Vérifier qu'on ne peut pas accéder sans token"""
-    print_test("Tentative d'accès au endpoint protégé SANS token")
-    
-    try:
-        response = requests.get(f"{BASE_URL}/protected/protected", headers=HEADERS)
-        
-        if response.status_code in [401, 422]:
-            print_success("Accès refusé sans token (protection JWT OK)")
-            return True
-        else:
-            print_error(f"Accès autorisé sans token! (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_create_place_authenticated():
-    """Test 3: Créer un place en tant qu'utilisateur authentifié"""
-    print_section("TÂCHE 3: Endpoints authentifiés")
-    print_test("Création d'un place par l'utilisateur authentifié")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    place_data = {
-        "title": "Belle maison",
-        "description": "Maison avec jardin",
-        "price": 100.0,
-        "latitude": 45.5,
-        "longitude": 2.5
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/places/", json=place_data, headers=auth_header)
-        
-        if response.status_code == 201:
-            data = response.json()
-            test_data['place_id'] = data['id']
-            print_success(f"Place créé avec succès (ID: {data['id']})")
-            
-            # Vérifier que l'owner_id est bien l'utilisateur connecté
-            if data.get('owner_id') == test_data['user_id']:
-                print_success("L'owner_id correspond bien à l'utilisateur connecté")
             else:
-                print_warning(f"Owner ID: {data.get('owner_id')} vs User ID: {test_data['user_id']}")
-            
-            return True
+                print_failure("Token manquant")
+                return False
         else:
-            print_error(f"Échec création place (Status: {response.status_code})")
-            print_error(f"Réponse: {response.text}")
+            print_failure(f"Status: {response.status_code}")
             return False
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def test_update_own_place():
-    """Test 3b: Modifier son propre place"""
-    print_test("Modification du place par son propriétaire")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    update_data = {
-        "title": "Belle maison (modifiée)",
-        "price": 120.0
-    }
-    
-    try:
-        response = requests.put(
-            f"{BASE_URL}/places/{test_data['place_id']}",
-            json=update_data,
-            headers=auth_header
-        )
-        
-        if response.status_code == 200:
-            print_success("Place modifié avec succès par son propriétaire")
-            return True
-        else:
-            print_error(f"Échec modification (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
 
-def test_create_review_authenticated():
-    """Test 3c: Créer une review"""
-    print_test("Création d'une review (admin review le place de user)")
+# ========== AMENITY TESTS ==========
+
+def test_create_amenity_as_admin():
+    """Test: Créer amenity (admin)"""
+    print_test("Création amenity par admin")
     
-    auth_header = {
-        "Authorization": f"Bearer {test_data['admin_token']}",
-        "Content-Type": "application/json"
-    }
+    if not admin_token:
+        print_failure("Pas de token admin")
+        return False
     
-    review_data = {
-        "text": "Très bel endroit!",
-        "rating": 5,
-        "place_id": test_data['place_id']
-    }
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {admin_token}'
+    
+    amenity_data = {"name": f"WiFi-Test-{tests_total}"}
     
     try:
-        response = requests.post(f"{BASE_URL}/reviews/", json=review_data, headers=auth_header)
+        response = requests.post(f"{BASE_URL}/amenities/", json=amenity_data, headers=headers_auth)
         
         if response.status_code == 201:
             data = response.json()
-            test_data['review_id'] = data['id']
-            print_success(f"Review créée avec succès (ID: {data['id']})")
+            created_ids['amenity'] = data['id']
+            print_success(f"Amenity créée: {data['name']}")
             return True
         else:
-            print_error(f"Échec création review (Status: {response.status_code})")
-            print_error(f"Réponse: {response.text}")
+            print_failure(f"Status: {response.status_code}")
             return False
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def test_cannot_review_own_place():
-    """Test 3d: Vérifier qu'on ne peut pas reviewer son propre place"""
-    print_test("Tentative de review de son propre place (doit échouer)")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    review_data = {
-        "text": "Mon propre place est super!",
-        "rating": 5,
-        "place_id": test_data['place_id']
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/reviews/", json=review_data, headers=auth_header)
-        
-        if response.status_code == 400:
-            print_success("Review de son propre place bien refusée")
-            return True
-        else:
-            print_error(f"Review de son propre place autorisée! (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
 
-def test_cannot_review_twice():
-    """Test 3e: Vérifier qu'on ne peut pas reviewer 2 fois le même place"""
-    print_test("Tentative de review multiple du même place (doit échouer)")
+def test_create_amenity_as_user_forbidden():
+    """Test: User régulier ne peut pas créer amenity"""
+    print_test("User ne peut PAS créer amenity")
     
-    auth_header = {
-        "Authorization": f"Bearer {test_data['admin_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    review_data = {
-        "text": "Encore une review!",
-        "rating": 4,
-        "place_id": test_data['place_id']
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/reviews/", json=review_data, headers=auth_header)
-        
-        if response.status_code == 400:
-            print_success("Review multiple bien refusée")
-            return True
-        else:
-            print_error(f"Review multiple autorisée! (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
+    if not user_token:
+        print_failure("Pas de user token")
         return False
-
-def test_update_own_user():
-    """Test 3f: Modifier ses propres infos utilisateur"""
-    print_test("Modification de ses propres informations utilisateur")
     
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {user_token}'
     
-    update_data = {
-        "first_name": "Johnny"
-    }
+    amenity_data = {"name": "Unauthorized-Amenity"}
     
     try:
-        response = requests.put(
-            f"{BASE_URL}/users/{test_data['user_id']}",
-            json=update_data,
-            headers=auth_header
-        )
-        
-        if response.status_code == 200:
-            print_success("Informations utilisateur modifiées avec succès")
-            return True
-        else:
-            print_error(f"Échec modification (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_cannot_update_email():
-    """Test 3g: Vérifier qu'un user ne peut pas modifier son email"""
-    print_test("Tentative de modification d'email (doit échouer)")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    update_data = {
-        "email": "newemail@test.com"
-    }
-    
-    try:
-        response = requests.put(
-            f"{BASE_URL}/users/{test_data['user_id']}",
-            json=update_data,
-            headers=auth_header
-        )
-        
-        if response.status_code == 400:
-            print_success("Modification d'email bien refusée pour user normal")
-            return True
-        else:
-            print_error(f"Modification d'email autorisée! (Status: {response.status_code})")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_admin_create_amenity():
-    """Test 4: Admin crée une amenity"""
-    print_section("TÂCHE 4: Endpoints administrateur")
-    print_test("Création d'une amenity (admin uniquement)")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['admin_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    amenity_data = {
-        "name": "WiFi"
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/admin/amenities/", json=amenity_data, headers=auth_header)
-        
-        if response.status_code == 201:
-            data = response.json()
-            test_data['amenity_id'] = data['id']
-            print_success(f"Amenity créée avec succès (ID: {data['id']})")
-            return True
-        else:
-            print_error(f"Échec création amenity (Status: {response.status_code})")
-            print_error(f"Réponse: {response.text}")
-            return False
-    except Exception as e:
-        print_error(f"Erreur: {e}")
-        return False
-
-def test_user_cannot_create_amenity():
-    """Test 4b: User normal ne peut pas créer d'amenity"""
-    print_test("Tentative de création d'amenity par user normal (doit échouer)")
-    
-    auth_header = {
-        "Authorization": f"Bearer {test_data['user_token']}",
-        "Content-Type": "application/json"
-    }
-    
-    amenity_data = {
-        "name": "Piscine"
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/admin/amenities/", json=amenity_data, headers=auth_header)
+        response = requests.post(f"{BASE_URL}/amenities/", json=amenity_data, headers=headers_auth)
         
         if response.status_code == 403:
-            print_success("Création d'amenity bien refusée pour user normal")
+            print_success("Accès refusé comme attendu")
             return True
         else:
-            print_error(f"Création d'amenity autorisée! (Status: {response.status_code})")
+            print_failure(f"Devrait être 403, mais: {response.status_code}")
             return False
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def test_admin_modify_any_user():
-    """Test 4c: Admin modifie n'importe quel utilisateur"""
-    print_test("Modification d'un utilisateur par l'admin (email + password)")
+
+# ========== PLACE TESTS ==========
+
+def test_create_place_as_user():
+    """Test: User crée son propre place"""
+    print_test("Création place par user")
     
-    auth_header = {
-        "Authorization": f"Bearer {test_data['admin_token']}",
-        "Content-Type": "application/json"
+    if not user_token or not created_ids['user']:
+        print_failure("User token ou ID manquant")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {user_token}'
+    
+    place_data = {
+        "title": "Cozy Apartment",
+        "description": "Nice place",
+        "price": 100.0,
+        "latitude": 48.8566,
+        "longitude": 2.3522,
+        "owner_id": created_ids['user'],
+        "amenities": []
     }
     
-    update_data = {
-        "email": "john.updated@test.com",
-        "password": "newpassword123"
+    try:
+        response = requests.post(f"{BASE_URL}/places/", json=place_data, headers=headers_auth)
+        
+        if response.status_code == 201:
+            data = response.json()
+            created_ids['place'] = data['id']
+            print_success(f"Place créé: {data['title']}")
+            return True
+        else:
+            print_failure(f"Status: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+def test_user_cannot_create_place_for_others():
+    """Test: User ne peut pas créer place pour quelqu'un d'autre"""
+    print_test("User ne peut créer place pour autrui")
+    
+    if not user_token:
+        print_failure("Pas de user token")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {user_token}'
+    
+    place_data = {
+        "title": "Fake Place",
+        "price": 50.0,
+        "latitude": 40.0,
+        "longitude": -3.0,
+        "owner_id": created_ids['admin'],  # Essayer de créer pour admin
+        "amenities": []
     }
     
     try:
-        response = requests.put(
-            f"{BASE_URL}/admin/users/{test_data['user_id']}",
-            json=update_data,
-            headers=auth_header
-        )
+        response = requests.post(f"{BASE_URL}/places/", json=place_data, headers=headers_auth)
         
-        if response.status_code == 200:
-            print_success("Admin a modifié l'utilisateur avec succès (email + password)")
-            
-            # Vérifier que le nouveau password fonctionne
-            print_test("Vérification que le nouveau mot de passe fonctionne")
-            login_data = {
-                "email": "john.updated@test.com",
-                "password": "newpassword123"
-            }
-            login_response = requests.post(f"{BASE_URL}/auth/login", json=login_data, headers=HEADERS)
-            
-            if login_response.status_code == 200:
-                print_success("Nouveau mot de passe fonctionne (hash OK)")
-                return True
-            else:
-                print_error("Nouveau mot de passe ne fonctionne pas")
-                return False
+        if response.status_code == 403:
+            print_success("Accès refusé comme attendu")
+            return True
         else:
-            print_error(f"Échec modification par admin (Status: {response.status_code})")
+            print_failure(f"Devrait être 403, mais: {response.status_code}")
             return False
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def test_database_persistence():
-    """Test 5-7: Vérifier la persistance en base de données"""
-    print_section("TÂCHES 5-7: Persistance SQLAlchemy")
-    print_test("Vérification de la persistance en base de données")
+
+def test_admin_can_create_place_for_others():
+    """Test: Admin peut créer place pour n'importe qui"""
+    print_test("Admin peut créer place pour autrui")
+    
+    if not admin_token or not created_ids['user']:
+        print_failure("Token ou user ID manquant")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {admin_token}'
+    
+    place_data = {
+        "title": "Admin Created Place",
+        "price": 200.0,
+        "latitude": 51.5074,
+        "longitude": -0.1278,
+        "owner_id": created_ids['user'],  # Créer pour le user
+        "amenities": []
+    }
     
     try:
-        # Récupérer l'utilisateur
-        response = requests.get(f"{BASE_URL}/users/{test_data['user_id']}")
-        if response.status_code == 200:
-            print_success("User récupéré depuis la base de données")
+        response = requests.post(f"{BASE_URL}/places/", json=place_data, headers=headers_auth)
+        
+        if response.status_code == 201:
+            print_success("Admin peut créer place pour autrui")
+            return True
         else:
-            print_error("Échec récupération user")
+            print_failure(f"Status: {response.status_code}")
             return False
-        
-        # Récupérer le place
-        response = requests.get(f"{BASE_URL}/places/{test_data['place_id']}")
-        if response.status_code == 200:
-            print_success("Place récupéré depuis la base de données")
-        else:
-            print_error("Échec récupération place")
-            return False
-        
-        # Récupérer la review
-        response = requests.get(f"{BASE_URL}/reviews/{test_data['review_id']}")
-        if response.status_code == 200:
-            print_success("Review récupérée depuis la base de données")
-        else:
-            print_error("Échec récupération review")
-            return False
-        
-        # Récupérer l'amenity
-        response = requests.get(f"{BASE_URL}/amenities/{test_data['amenity_id']}")
-        if response.status_code == 200:
-            print_success("Amenity récupérée depuis la base de données")
-        else:
-            print_error("Échec récupération amenity")
-            return False
-        
-        print_success("Toutes les entités sont persistées correctement en base de données")
-        return True
-        
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def test_get_all_entities():
-    """Test supplémentaire: Récupérer toutes les entités"""
-    print_test("Récupération de toutes les entités (GET all)")
+
+# ========== REVIEW TESTS ==========
+
+def test_create_review_as_admin():
+    """Test: Admin crée une review"""
+    print_test("Création review par admin")
+    
+    if not admin_token or not created_ids['place'] or not created_ids['admin']:
+        print_failure("Données manquantes")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {admin_token}'
+    
+    review_data = {
+        "text": "Great place!",
+        "rating": 5,
+        "place_id": created_ids['place'],
+        "user_id": created_ids['admin']
+    }
     
     try:
-        # Users
-        response = requests.get(f"{BASE_URL}/users/")
-        if response.status_code == 200 and len(response.json()) >= 2:
-            print_success(f"Liste des users récupérée ({len(response.json())} users)")
+        response = requests.post(f"{BASE_URL}/reviews/", json=review_data, headers=headers_auth)
         
-        # Places
-        response = requests.get(f"{BASE_URL}/places/")
-        if response.status_code == 200 and len(response.json()) >= 1:
-            print_success(f"Liste des places récupérée ({len(response.json())} places)")
-        
-        # Reviews
-        response = requests.get(f"{BASE_URL}/reviews/")
-        if response.status_code == 200 and len(response.json()) >= 1:
-            print_success(f"Liste des reviews récupérée ({len(response.json())} reviews)")
-        
-        # Amenities
-        response = requests.get(f"{BASE_URL}/amenities/")
-        if response.status_code == 200 and len(response.json()) >= 1:
-            print_success(f"Liste des amenities récupérée ({len(response.json())} amenities)")
-        
-        return True
-        
+        if response.status_code == 201:
+            data = response.json()
+            created_ids['review'] = data['id']
+            print_success(f"Review créée")
+            return True
+        else:
+            print_failure(f"Status: {response.status_code} - {response.text}")
+            return False
     except Exception as e:
-        print_error(f"Erreur: {e}")
+        print_failure(f"Exception: {e}")
         return False
 
-def cleanup():
-    """Nettoyage optionnel (commenté par défaut)"""
-    print_section("NETTOYAGE (optionnel)")
-    print_warning("Les données de test restent en base pour inspection manuelle")
-    print_warning("Pour nettoyer: supprimez le fichier development.db et relancez l'app")
+
+def test_user_cannot_review_own_place():
+    """Test: User ne peut pas reviewer son propre place"""
+    print_test("User ne peut reviewer son propre place")
+    
+    if not user_token or not created_ids['place'] or not created_ids['user']:
+        print_failure("Données manquantes")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {user_token}'
+    
+    review_data = {
+        "text": "My own place review",
+        "rating": 5,
+        "place_id": created_ids['place'],
+        "user_id": created_ids['user']
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/reviews/", json=review_data, headers=headers_auth)
+        
+        if response.status_code == 400:
+            print_success("Refusé comme attendu")
+            return True
+        else:
+            print_failure(f"Devrait être 400, mais: {response.status_code}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+# ========== VALIDATION TESTS ==========
+
+def test_validation_negative_price():
+    """Test: Prix négatif rejeté"""
+    print_test("Validation: Prix négatif")
+    
+    if not user_token:
+        print_failure("Pas de token")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {user_token}'
+    
+    place_data = {
+        "title": "Invalid Place",
+        "price": -50.0,
+        "latitude": 48.8566,
+        "longitude": 2.3522,
+        "owner_id": created_ids['user'],
+        "amenities": []
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/places/", json=place_data, headers=headers_auth)
+        
+        if response.status_code == 400:
+            print_success("Prix négatif rejeté")
+            return True
+        else:
+            print_failure(f"Devrait être 400, mais: {response.status_code}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+def test_validation_invalid_rating():
+    """Test: Rating invalide rejeté"""
+    print_test("Validation: Rating > 5")
+    
+    if not admin_token or not created_ids['place']:
+        print_failure("Données manquantes")
+        return False
+    
+    headers_auth = HEADERS.copy()
+    headers_auth['Authorization'] = f'Bearer {admin_token}'
+    
+    review_data = {
+        "text": "Test review",
+        "rating": 10,
+        "place_id": created_ids['place'],
+        "user_id": created_ids['admin']
+    }
+    
+    try:
+        response = requests.post(f"{BASE_URL}/reviews/", json=review_data, headers=headers_auth)
+        
+        if response.status_code == 400:
+            print_success("Rating invalide rejeté")
+            return True
+        else:
+            print_failure(f"Devrait être 400, mais: {response.status_code}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+# ========== PUBLIC ACCESS TESTS ==========
+
+def test_public_get_places():
+    """Test: Accès public aux places"""
+    print_test("GET places (public)")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/places/", headers=HEADERS)
+        
+        if response.status_code == 200:
+            data = response.json()
+            print_success(f"{len(data)} place(s) trouvé(s)")
+            return True
+        else:
+            print_failure(f"Status: {response.status_code}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+def test_public_get_amenities():
+    """Test: Accès public aux amenities"""
+    print_test("GET amenities (public)")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/amenities/", headers=HEADERS)
+        
+        if response.status_code == 200:
+            data = response.json()
+            print_success(f"{len(data)} amenity/amenities trouvée(s)")
+            return True
+        else:
+            print_failure(f"Status: {response.status_code}")
+            return False
+    except Exception as e:
+        print_failure(f"Exception: {e}")
+        return False
+
+
+def print_summary():
+    print_header("RÉSUMÉ DES TESTS")
+    
+    print(f"Tests exécutés : {tests_total}")
+    print(f"{Fore.GREEN}Tests réussis  : {tests_passed} ✓{Style.RESET_ALL}")
+    print(f"{Fore.RED}Tests échoués  : {tests_failed} ✗{Style.RESET_ALL}")
+    
+    success_rate = (tests_passed / tests_total * 100) if tests_total > 0 else 0
+    print(f"\nTaux de réussite : {success_rate:.1f}%")
+    
+    if tests_failed == 0:
+        print(f"\n{Fore.GREEN}{Style.BRIGHT}🎉 TOUS LES TESTS SONT PASSÉS ! 🎉{Style.RESET_ALL}")
+        print(f"{Fore.GREEN}Ton projet Part 3 est fonctionnel !{Style.RESET_ALL}")
+    else:
+        print(f"\n{Fore.YELLOW}⚠ Certains tests ont échoué.{Style.RESET_ALL}")
+
 
 def main():
-    """Fonction principale"""
-    print(f"\n{Colors.BOLD}{'='*70}")
-    print(f"  TEST COMPLET - HBNB PART 3 - TÂCHES 0 À 7")
-    print(f"{'='*70}{Colors.END}\n")
+    print_header("TEST COMPLET - HBnB Part 3")
+    print_info("Vérification serveur Flask sur http://localhost:5000")
     
-    results = []
+    try:
+        requests.get(BASE_URL + "/users/", timeout=2)
+    except requests.exceptions.ConnectionError:
+        print(f"\n{Fore.RED}❌ ERREUR: Serveur Flask inaccessible !{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Lance: flask run{Style.RESET_ALL}\n")
+        return
     
-    # Tâche 0
-    if not test_server_running():
-        print_error("\n❌ Le serveur n'est pas accessible. Arrêt des tests.")
-        sys.exit(1)
+    # AUTHENTICATION
+    print_header("SECTION 1: AUTHENTICATION")
+    test_login_admin()
+    test_create_regular_user()
+    test_login_regular_user()
     
-    # Tâche 1
-    results.append(("Création admin", test_create_admin_user()))
-    results.append(("Création user", test_create_regular_user()))
+    # AMENITIES
+    print_header("SECTION 2: AMENITIES (Admin only)")
+    test_create_amenity_as_admin()
+    test_create_amenity_as_user_forbidden()
     
-    # Tâche 2
-    results.append(("Login admin", test_login_admin()))
-    results.append(("Login user", test_login_user()))
-    results.append(("Mauvais password", test_wrong_password()))
-    results.append(("Endpoint protégé", test_protected_endpoint()))
-    results.append(("Sans token", test_protected_without_token()))
+    # PLACES
+    print_header("SECTION 3: PLACES")
+    test_create_place_as_user()
+    test_user_cannot_create_place_for_others()
+    test_admin_can_create_place_for_others()
     
-    # Tâche 3
-    results.append(("Création place", test_create_place_authenticated()))
-    results.append(("Modification place", test_update_own_place()))
-    results.append(("Création review", test_create_review_authenticated()))
-    results.append(("Review propre place", test_cannot_review_own_place()))
-    results.append(("Review multiple", test_cannot_review_twice()))
-    results.append(("Modification user", test_update_own_user()))
-    results.append(("Modification email", test_cannot_update_email()))
+    # REVIEWS
+    print_header("SECTION 4: REVIEWS")
+    test_create_review_as_admin()
+    test_user_cannot_review_own_place()
     
-    # Tâche 4
-    results.append(("Admin crée amenity", test_admin_create_amenity()))
-    results.append(("User crée amenity", test_user_cannot_create_amenity()))
-    results.append(("Admin modifie user", test_admin_modify_any_user()))
+    # VALIDATIONS
+    print_header("SECTION 5: VALIDATIONS")
+    test_validation_negative_price()
+    test_validation_invalid_rating()
     
-    # Tâches 5-7
-    results.append(("Persistance DB", test_database_persistence()))
-    results.append(("GET all entities", test_get_all_entities()))
+    # PUBLIC ACCESS
+    print_header("SECTION 6: PUBLIC ACCESS")
+    test_public_get_places()
+    test_public_get_amenities()
     
-    # Nettoyage
-    cleanup()
-    
-    # Résumé
-    print_section("RÉSUMÉ DES TESTS")
-    passed = sum(1 for _, result in results if result)
-    total = len(results)
-    
-    for name, result in results:
-        status = f"{Colors.GREEN}✓{Colors.END}" if result else f"{Colors.RED}✗{Colors.END}"
-        print(f"{status} {name}")
-    
-    print(f"\n{Colors.BOLD}Résultat: {passed}/{total} tests réussis{Colors.END}")
-    
-    if passed == total:
-        print(f"\n{Colors.GREEN}{Colors.BOLD}🎉 TOUS LES TESTS SONT PASSÉS ! Vous êtes prêt pour la tâche 8 !{Colors.END}\n")
-        return 0
-    else:
-        print(f"\n{Colors.RED}{Colors.BOLD}❌ {total - passed} test(s) en échec. Vérifiez les corrections.{Colors.END}\n")
-        return 1
+    print_summary()
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()

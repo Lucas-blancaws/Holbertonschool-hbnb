@@ -43,13 +43,18 @@ class InMemoryRepository(Repository):
         obj = self.get(obj_id)
         if obj:
             obj.update(data)
+            return obj
+        return None
 
     def delete(self, obj_id):
         if obj_id in self._storage:
             del self._storage[obj_id]
+            return True
+        return False
 
     def get_by_attribute(self, attr_name, attr_value):
         return next((obj for obj in self._storage.values() if getattr(obj, attr_name) == attr_value), None)
+
 
 class SQLAlchemyRepository(Repository):
     """Repository utilisant SQLAlchemy pour la persistence en base de données"""
@@ -66,8 +71,12 @@ class SQLAlchemyRepository(Repository):
     def add(self, obj):
         """Ajoute un objet à la base de données"""
         from app.extensions import db
-        db.session.add(obj)
-        db.session.commit()
+        try:
+            db.session.add(obj)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            raise e
 
     def get(self, obj_id):
         """Récupère un objet par son ID"""
@@ -82,17 +91,30 @@ class SQLAlchemyRepository(Repository):
         from app.extensions import db
         obj = self.get(obj_id)
         if obj:
-            for key, value in data.items():
-                setattr(obj, key, value)
-            db.session.commit()
+            try:
+                for key, value in data.items():
+                    if hasattr(obj, key):
+                        setattr(obj, key, value)
+                db.session.commit()
+                return obj
+            except Exception as e:
+                db.session.rollback()
+                raise e
+        return None
 
     def delete(self, obj_id):
         """Supprime un objet de la base de données"""
         from app.extensions import db
         obj = self.get(obj_id)
         if obj:
-            db.session.delete(obj)
-            db.session.commit()
+            try:
+                db.session.delete(obj)
+                db.session.commit()
+                return True
+            except Exception as e:
+                db.session.rollback()
+                raise e
+        return False
 
     def get_by_attribute(self, attr_name, attr_value):
         """Récupère un objet par un attribut spécifique"""

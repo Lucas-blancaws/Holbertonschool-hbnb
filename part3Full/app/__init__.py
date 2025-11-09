@@ -1,12 +1,8 @@
 from flask import Flask
 from flask_restx import Api
-import config
-from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-
-from app.extensions import db, bcrypt
-
-jwt = JWTManager()
+from app.extensions import db, bcrypt, jwt
+import config
 
 def create_app(config_class=config.DevelopmentConfig):
     app = Flask(__name__)
