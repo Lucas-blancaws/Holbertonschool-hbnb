@@ -1,7 +1,7 @@
 from app.extensions import db, bcrypt
 import re
 from app.models.basemodel import BaseModel
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates, relationship
 
 class User(BaseModel):
     __tablename__ = 'users'
@@ -11,6 +11,9 @@ class User(BaseModel):
     email = db.Column(db.String(120), nullable=False, unique=True)
     password = db.Column(db.String(128), nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    
+    places = relationship('Place', backref='owner', lazy=True, cascade='all, delete-orphan')
+    reviews = relationship('Review', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def __init__(self, first_name, last_name, email, password, is_admin=False):
         super().__init__()

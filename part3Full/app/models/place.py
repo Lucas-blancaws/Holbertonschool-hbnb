@@ -1,6 +1,7 @@
 from app.models.basemodel import BaseModel
-from sqlalchemy.orm import validates
+from sqlalchemy.orm import validates, relationship
 from app.extensions import db
+from app.models.place_amenity import place_amenity
 
 class Place(BaseModel):
     __tablename__ = 'places'
@@ -11,7 +12,11 @@ class Place(BaseModel):
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     
-    owner_id = db.Column(db.String(36), nullable=False)
+    owner_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    
+    reviews = relationship('Review', backref='place', lazy=True, cascade='all, delete-orphan')
+    amenities = relationship('Amenity', secondary=place_amenity, lazy='subquery',
+                             backref=db.backref('places', lazy=True))
     
     def __init__(self, title, price, latitude, longitude, owner, description=None):
         super().__init__()
@@ -21,7 +26,7 @@ class Place(BaseModel):
         self.latitude = latitude
         self.longitude = longitude
         self.owner = owner  
-        self.owner_id = owner.id
+        self.owner_id = owner.id if hasattr(owner, 'id') else owner
         self.reviews = []
         self.amenities = []
     
@@ -79,13 +84,13 @@ class Place(BaseModel):
 
     def to_dict(self):
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
             'description': self.description,
             'price': self.price,
             'latitude': self.latitude,
             'longitude': self.longitude,
-            'owner_id': self.owner_id
+            'owner_id': str(self.owner_id)
         }
     
     def to_dict_list(self):

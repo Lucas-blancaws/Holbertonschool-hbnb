@@ -108,7 +108,8 @@ class ReviewResource(Resource):
         
         try:
             facade.update_review(review_id, api.payload)
-            return {'message': 'Review updated successfully'}, 200
+            updated_review = facade.get_review(review_id)
+            return updated_review.to_dict(), 200
         except Exception as e:
             return {'error': str(e)}, 400
 
