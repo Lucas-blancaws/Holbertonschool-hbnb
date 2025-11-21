@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Review</title>
+    <link rel="icon" type="images/png" href="images/icon.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <img src="images/logo.png" alt="HBnB Logo" class="logo">
+            <nav>
+                <a href="index.html">Home</a>
+                <a href="login.html" id="login-link" class="login-button">Login</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <div class="form-container">
+            <div id="place-info-review" class="place-info-review">
+                <h2>Review for: <span id="place-name-review">Loading...</span></h2>
+            </div>
+
+            <form id="review-form" class="form add-review">
+                <h2>Add Your Review</h2>
+                <p class="form-subtitle">Share your experience</p>
+                <div class="form-group">
+                    <label for="review">Your Review:</label>
+                    <textarea id="review" name="review" rows="5" placeholder="Tell us about your stay..." required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="rating">Rating:</label>
+                    <select id="rating" name="rating" required>
+                        <option value="">Select a rating</option>
+                        <option value="1">⭐ 1 - Poor</option>
+                        <option value="2">⭐⭐ 2 - Fair</option>
+                        <option value="3">⭐⭐⭐ 3 - Good</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - Very Good</option>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Excellent</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="submit-button">Submit Review</button>
+                
+                <p class="form-message" id="success-message" style="display: none;"></p>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 HBnB. All rights reserved.</p>
+    </footer>
+
+<!-- Lecteur de musique amélioré -->
+    <div id="music-player" class="music-player">
+        <div class="music-info">
+            <span id="track-name" class="track-name">Loading...</span>
+        </div>
+        
+        <div class="music-controls">
+            <button id="prev-btn" class="control-btn" title="Previous">⏮️</button>
+            <button id="play-pause-btn" class="play-pause-btn" title="Play/Pause">🎵</button>
+            <button id="next-btn" class="control-btn" title="Next">⏭️</button>
+        </div>
+        
+        <div class="progress-container">
+            <span id="current-time" class="time">0:00</span>
+            <input type="range" id="progress-bar" class="progress-bar" min="0" max="100" value="0">
+            <span id="duration-time" class="time">0:00</span>
+        </div>
+        
+        <div class="volume-control">
+            <span class="volume-icon">🔊</span>
+            <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="30">
+            <span id="volume-value" class="volume-value">30%</span>
+        </div>
+    </div>
+
+    <script src="scripts.js"></script>
+</body>
+</html>
